@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { AlternateLinks, buildLinks } from './components/AlternateLinks';
 import { ElementColumn } from './components/ElementTree';
 import { FiberCard, type Highlight } from './components/FiberCard';
 import { Inspector } from './components/Inspector';
 import { Misconceptions } from './components/Misconceptions';
 import { RenderLog } from './components/RenderLog';
 import { StepPlayer } from './components/StepPlayer';
-import { buildSteps } from './fiber/steps';
+import { buildSteps, commitEffects, progressAt } from './fiber/steps';
 import { scenarios } from './scenarios';
 import { getState, startScenario, stopScenario, subscribe } from './store';
 
@@ -16,19 +17,25 @@ export default function App() {
   const [resetCount, setResetCount] = useState(0);
   const [selected, setSelected] = useState<number | null>(null); // null = follow latest
   const [hoverSlot, setHoverSlot] = useState<number | null>(null);
-  const [activeObjId, setActiveObjId] = useState<number | null>(null);
+  const [stepState, setStepState] = useState<{ key: string; index: number } | null>(null);
+  const [showLinks, setShowLinks] = useState(true);
+  const [showPointers, setShowPointers] = useState(false);
   const [inspectMode, setInspectMode] = useState(false);
   const [inspected, setInspected] = useState<Element | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const columnsRef = useRef<HTMLDivElement>(null);
 
   const scenario = scenarios.find((s) => s.id === scenarioId)!;
   const { commits, log, tracker } = useSyncExternalStore(subscribe, getState);
 
   useEffect(() => {
-    startScenario(stageRef.current!, scenario.Component);
+    // Swap demo roots in a microtask: unmounting a root synchronously while
+    // React is still rendering (this effect runs inside a click's sync render) warns.
+    const stage = stageRef.current!;
+    queueMicrotask(() => startScenario(stage, scenario.Component));
     setSelected(null);
     setInspected(null);
-    return () => stopScenario();
+    return () => queueMicrotask(stopScenario);
   }, [scenario, resetCount]);
 
   const latest = commits.length - 1;
@@ -36,7 +43,33 @@ export default function App() {
   const commit = commits[index];
   const prev = index > 0 ? commits[index - 1] : undefined;
   const steps = useMemo(() => (commit && index > 0 ? buildSteps(commit) : []), [commit, index]);
-  const onActive = useCallback((id: number | null) => setActiveObjId(id), []);
+  const links = useMemo(() => (prev && commit ? buildLinks(prev, commit) : []), [prev, commit]);
+
+  // The step player starts on the last step (commit), i.e. the finished tree.
+  const stepKey = `${scenarioId}-${resetCount}-${index}`;
+  const stepIndex = stepState?.key === stepKey ? stepState.index : steps.length - 1;
+  const step = steps[stepIndex];
+  const onStepIndex = useCallback((i: number) => setStepState({ key: stepKey, index: i }), [stepKey]);
+  const progress = useMemo(() => (steps.length ? progressAt(steps, stepIndex) : undefined), [steps, stepIndex]);
+  const activeObjId = step?.objId ?? null;
+
+  // Mark the DOM nodes on the stage that the current step is about.
+  useEffect(() => {
+    if (!commit || !step) return;
+    const marks: [Element, string][] = [];
+    if (step.phase === 'commit') {
+      for (const effect of commitEffects(commit.tree)) {
+        const el = commit.domByObjId.get(effect.objId);
+        if (el) marks.push([el, effect.kind]);
+      }
+    } else if (step.objId !== null) {
+      const el = commit.domByObjId.get(step.objId);
+      if (el) marks.push([el, 'active']);
+    }
+    const live = marks.filter(([el]) => el.isConnected);
+    live.forEach(([el, kind]) => el.setAttribute('data-xray', kind));
+    return () => live.forEach(([el]) => el.removeAttribute('data-xray'));
+  }, [commit, step]);
 
   const select = (i: number) => setSelected(i >= latest ? null : Math.max(0, i));
 
@@ -51,8 +84,8 @@ export default function App() {
     setInspected(e.target as Element);
   };
 
-  const hlPrev: Highlight = { hoverSlot, activeObjId: null, deletedIds: commit?.deletedIds ?? EMPTY, onHover: setHoverSlot };
-  const hlNext: Highlight = { hoverSlot, activeObjId, deletedIds: EMPTY, onHover: setHoverSlot };
+  const hlPrev: Highlight = { hoverSlot, activeObjId: null, deletedIds: commit?.deletedIds ?? EMPTY, onHover: setHoverSlot, showPointers };
+  const hlNext: Highlight = { hoverSlot, activeObjId, deletedIds: EMPTY, onHover: setHoverSlot, showPointers };
 
   return (
     <div className="app">
@@ -112,6 +145,12 @@ export default function App() {
             <strong>{commit?.label ?? '…'}</strong>
             <button onClick={() => select(index + 1)} disabled={index >= latest}>▶</button>
             {selected !== null && <button className="link" onClick={() => setSelected(null)}>jump to latest</button>}
+            <label className="toggle small">
+              <input type="checkbox" checked={showLinks} onChange={(e) => setShowLinks(e.target.checked)} /> Alternate links
+            </label>
+            <label className="toggle small">
+              <input type="checkbox" checked={showPointers} onChange={(e) => setShowPointers(e.target.checked)} /> Pointers
+            </label>
             <span className="legend">
               <span className="chip letter-chip A">A</span>/<span className="chip letter-chip B">B</span> twin objects ·
               <span className="chip st-new">new object</span>
@@ -121,13 +160,21 @@ export default function App() {
           </div>
 
           {commit && (
-            <div className="columns">
+            <div className="columns" ref={columnsRef}>
+              {showLinks && (
+                <AlternateLinks
+                  containerRef={columnsRef}
+                  links={links}
+                  hoverSlot={hoverSlot}
+                  layoutKey={`${stepKey}-${stepIndex}-${showPointers}`}
+                />
+              )}
               <section className="panel col">
                 <div className="panel-head">
                   <h2>① Current tree before render</h2>
                   <span className="muted small">read, never modified</span>
                 </div>
-                {prev ? <FiberCard node={prev.tree} hl={hlPrev} showWork={false} /> : <p className="muted">Nothing before createRoot.</p>}
+                {prev ? <FiberCard node={prev.tree} hl={hlPrev} showWork={false} col="prev" /> : <p className="muted">Nothing before createRoot.</p>}
               </section>
               <section className="panel col">
                 <div className="panel-head">
@@ -139,14 +186,21 @@ export default function App() {
               <section className="panel col">
                 <div className="panel-head">
                   <h2>③ Work-in-progress → committed</h2>
-                  <span className="muted small">written, now root.current</span>
+                  <span className="muted small">written by the render</span>
                 </div>
-                <FiberCard node={commit.tree} hl={hlNext} showWork={index > 0} />
+                {progress && (
+                  <div className={`wip-banner ${progress.committed ? 'committed' : ''}`}>
+                    {progress.committed
+                      ? 'Committed: root.current → this tree. It is what is on screen now.'
+                      : `Rendering (step ${stepIndex + 1}/${steps.length}): this tree is a work in progress. In React, the screen would still show ①.`}
+                  </div>
+                )}
+                <FiberCard node={commit.tree} hl={hlNext} showWork={index > 0} col="next" progress={progress} />
               </section>
             </div>
           )}
 
-          {steps.length > 0 && <StepPlayer key={`${scenarioId}-${resetCount}-${index}`} steps={steps} onActive={onActive} />}
+          {steps.length > 0 && <StepPlayer key={stepKey} steps={steps} index={stepIndex} onIndex={onStepIndex} />}
 
           <section className="panel">
             <div className="panel-head"><h2>Common misconceptions</h2></div>
