@@ -81,7 +81,7 @@ export function FiberCard({ node, hl, showWork, col, progress, parentReached = t
       <div className={classes.join(' ')} data-col={col} data-obj={node.objId} {...hover}>
         <div className="fiber-head">
           <span className="fiber-name">{node.name}</span>
-          <span className="obj">#{node.objId}<b className="letter">{node.letter}</b></span>
+          <span className="obj" data-term="label:objId">#{node.objId}<b className="letter" data-term="label:letter">{node.letter}</b></span>
           <span className="alt">not reached yet</span>
         </div>
         {children}
@@ -95,26 +95,26 @@ export function FiberCard({ node, hl, showWork, col, progress, parentReached = t
     <div className={classes.join(' ')} data-col={col} data-obj={node.objId} {...hover}>
       <div className="fiber-head">
         <span className="fiber-name">{node.name}</span>
-        {node.key !== null && <span className="chip key">key="{node.key}"</span>}
-        <span className="obj" title="object identity (A/B = which of the two twins)">
+        {node.key !== null && <span className="chip key" data-term="label:key">key="{node.key}"</span>}
+        <span className="obj" data-term="label:objId">
           #{node.objId}
-          <b className="letter">{node.letter}</b>
+          <b className="letter" data-term="label:letter">{node.letter}</b>
         </span>
-        <span className="alt" title="alternate pointer">alt {ptr(node.alternateId)}</span>
+        <span className="alt" data-term="label:alt">alt {ptr(node.alternateId)}</span>
       </div>
       <div className="fiber-meta">
-        <span className="tag">{tagLabel(node.tag)}</span>
-        {!completed && <span className="chip working-chip">beginWork done, waiting for completeWork</span>}
-        {showWork && <span className={`chip st-${node.status}`}>{statusText[node.status]}</span>}
-        {showWork && node.functionCalled && <span className="chip called">ƒ called</span>}
-        {bailedOut && <span className="chip bailout">bailout</span>}
+        <span className="tag" data-term={`tag:${tagLabel(node.tag)}`}>{tagLabel(node.tag)}</span>
+        {!completed && <span className="chip working-chip" data-term="chip:working" tabIndex={0}>beginWork done, waiting for completeWork</span>}
+        {showWork && <span className={`chip st-${node.status}`} data-term={`status:${node.status}`} tabIndex={0}>{statusText[node.status]}</span>}
+        {showWork && node.functionCalled && <span className="chip called" data-term="chip:called" tabIndex={0}>ƒ called</span>}
+        {bailedOut && <span className="chip bailout" data-term="chip:bailout" tabIndex={0}>bailout</span>}
         {showWork && flags.map((f) => (
-          <span key={f} className={`chip flag flag-${f}`}>{f}</span>
+          <span key={f} className={`chip flag flag-${f}`} data-term={`flag:${f}`} tabIndex={0}>{f}</span>
         ))}
-        {hl.deletedIds.has(node.objId) && <span className="chip flag flag-ChildDeletion">deleted next</span>}
+        {hl.deletedIds.has(node.objId) && <span className="chip flag flag-ChildDeletion" data-term="chip:deleted" tabIndex={0}>deleted next</span>}
       </div>
       {hl.showPointers && (
-        <div className="pointers">
+        <div className="pointers" data-term="label:pointers">
           child → {ptr(node.children[0]?.objId ?? null)} · sibling → {ptr(siblingId)} · return → {ptr(parentId)}
         </div>
       )}
@@ -126,9 +126,9 @@ export function FiberCard({ node, hl, showWork, col, progress, parentReached = t
           )}
           {node.hooks.length > 0 && <div>hooks: <code>{node.hooks.join(', ')}</code></div>}
           {showWork && node.propsFromElement !== null && node.status !== 'kept' && (
-            <div className="muted">props ← element e{node.propsFromElement}</div>
+            <div className="muted"><span data-term="label:propsFrom">props ← element e{node.propsFromElement}</span></div>
           )}
-          {showWork && node.propsSameObject && <div className="muted">same props object as current</div>}
+          {showWork && node.propsSameObject && <div className="muted"><span data-term="label:sameProps">same props object as current</span></div>}
           {showWork && node.changedProps.map((c) => (
             <div key={c.key} className="diff">Δ {c.key}: {c.from} → {c.to}</div>
           ))}

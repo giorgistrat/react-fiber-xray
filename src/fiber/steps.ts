@@ -2,6 +2,7 @@
 // snapshot. React does not expose its work loop, so this is a reconstruction:
 // a fiber was visited exactly when it was cloned (status !== 'kept').
 
+import { beginCalls, commitCalls, completeCalls, domWrites, type Call } from './calls';
 import type { CommitRecord, FiberSnap } from './snapshot';
 import { isComponentTag, isHostTag, WorkTag } from './types';
 
@@ -12,6 +13,12 @@ export interface Step {
   objId: number | null;
   title: string;
   lines: string[];
+  calls: Call[];
+  keyFn: string | null; // the most telling internal function, shown next to the title
+}
+
+function keyFn(calls: Call[]): string | null {
+  return calls.find((c) => c.depth === 2 && c.kind === undefined)?.fn ?? null;
 }
 
 export interface Progress {
@@ -69,13 +76,15 @@ export function buildSteps(commit: CommitRecord): Step[] {
 
   const walk = (n: FiberSnap) => {
     if (n.status === 'kept') return;
-    steps.push({ phase: 'begin', objId: n.objId, title: `beginWork ↓ ${label(n)}`, lines: beginLines(n, isMountRender) });
+    const begin = beginCalls(n, isMountRender);
+    steps.push({ phase: 'begin', objId: n.objId, title: `beginWork ↓ ${label(n)}`, lines: beginLines(n, isMountRender), calls: begin, keyFn: keyFn(begin) });
     for (const child of n.children) walk(child);
-    steps.push({ phase: 'complete', objId: n.objId, title: `completeWork ↑ ${label(n)}`, lines: completeLines(n) });
+    const complete = completeCalls(n);
+    steps.push({ phase: 'complete', objId: n.objId, title: `completeWork ↑ ${label(n)}`, lines: completeLines(n), calls: complete, keyFn: keyFn(complete) });
   };
   walk(commit.tree);
 
-  steps.push({ phase: 'commit', objId: null, title: 'commit', lines: commitLines(commit) });
+  steps.push({ phase: 'commit', objId: null, title: 'commit', lines: commitLines(commit), calls: commitCalls(commit), keyFn: null });
   return steps;
 }
 
@@ -151,12 +160,6 @@ function completeLines(n: FiberSnap): string[] {
     lines.push(`ChildDeletion: ${n.deletions.map((d) => `${d.name} #${d.objId}`).join(', ')} will be removed (with its DOM node) at commit.`);
   }
   return lines;
-}
-
-// Changed props that updateProperties actually writes to the DOM at commit:
-// not event handlers, and `children` only when it is a text child.
-function domWrites(n: FiberSnap) {
-  return n.changedProps.filter((c) => !c.key.startsWith('on') && (c.key !== 'children' || n.textContent !== null));
 }
 
 function commitPrediction(n: FiberSnap): string {
