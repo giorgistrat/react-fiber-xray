@@ -182,7 +182,15 @@ export default function App() {
                   <h2 data-term="col:elements">② New elements</h2>
                   <span className="muted small">read one level at a time</span>
                 </div>
-                <ElementColumn calls={commit.calls} isInitial={index === 0} />
+                <ElementColumn
+                  commit={commit}
+                  isInitial={index === 0}
+                  progress={progress}
+                  activeObjId={activeObjId}
+                  hoverSlot={hoverSlot}
+                  onHover={setHoverSlot}
+                  tracker={tracker}
+                />
               </section>
               <section className="panel col">
                 <div className="panel-head">

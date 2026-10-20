@@ -46,7 +46,7 @@ export interface FiberSnap {
   changedProps: PropChange[];
   propsFromElement: number | null; // element id (trace) whose props object this fiber holds
   hooks: string[];
-  deletions: { objId: number; name: string }[];
+  deletions: { objId: number; name: string; key: string | null }[];
   functionCalled: boolean;
   children: FiberSnap[];
 }
@@ -124,7 +124,7 @@ export class FiberTracker {
         ? (fiber.deletions ?? []).map((d) => {
             const id = this.register(d);
             deletedIds.add(id);
-            return { objId: id, name: fiberName(d) };
+            return { objId: id, name: fiberName(d), key: d.key };
           })
         : [];
 

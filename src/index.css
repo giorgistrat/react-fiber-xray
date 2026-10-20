@@ -267,3 +267,26 @@ footer { padding: 4px 2px 20px; }
 .call-tree .call-user span:first-child { color: var(--called); font-weight: 700; }
 .call-tree .call-marker span:first-child { color: var(--new); font-style: italic; }
 .call-note { color: var(--muted); }
+
+/* Column ②: element fates, read-one-level sync, raw objects */
+.el-stats { font-size: 12px; margin: 0 0 10px; padding: 6px 8px; border-radius: 6px; background: var(--code-bg); }
+.call { border-radius: 6px; padding: 4px; margin-bottom: 8px; transition: opacity 0.15s, background 0.15s; }
+.call-reading { background: color-mix(in srgb, var(--active) 18%, transparent); }
+.owner { color: var(--muted); font-size: 12px; }
+.el, .el-line { transition: opacity 0.15s, background 0.15s; }
+.el-line { border-radius: 4px; padding: 1px 2px; }
+.el-unread { opacity: 0.3; }
+.el-reading > .el-line { background: color-mix(in srgb, var(--active) 35%, transparent); box-shadow: 0 0 0 1px var(--active); }
+.el-hover > .el-line { box-shadow: 0 0 0 2px var(--accent); }
+.chip.fate { font-family: ui-monospace, Menlo, monospace; }
+.fate-mount { background: var(--new-soft); color: var(--new); }
+.fate-create { background: var(--new-soft); color: var(--new); font-weight: 600; }
+.fate-reuse { background: var(--recycled-soft); color: var(--recycled); }
+.fate-bailout { background: var(--kept-soft); color: var(--text); font-weight: 600; }
+.fate-text { background: var(--code-bg); color: var(--muted); }
+.el-deleted { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--flag); padding-left: 8px; margin: 2px 0; }
+.raw-toggle { padding: 0 6px; font-size: 11px; font-family: ui-monospace, Menlo, monospace; line-height: 1.6; }
+.raw { border-collapse: collapse; font-size: 11px; margin: 4px 0 6px 8px; background: var(--code-bg); border-radius: 6px; }
+.raw th { text-align: left; font-weight: 500; padding: 2px 8px; color: var(--text); font-family: ui-monospace, Menlo, monospace; vertical-align: top; }
+.raw td { padding: 2px 8px 2px 0; overflow-wrap: anywhere; }
+.raw-hidden th, .raw-hidden td code { color: var(--muted); }
