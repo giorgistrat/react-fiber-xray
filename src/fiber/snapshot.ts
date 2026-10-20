@@ -58,6 +58,8 @@ export interface CommitRecord {
   objIds: Set<number>;
   deletedIds: Set<number>;
   calls: RenderCall[];
+  // Host fibers' DOM nodes (fiber.stateNode), kept out of FiberSnap so snapshots stay plain data.
+  domByObjId: Map<number, Element>;
 }
 
 export class FiberTracker {
@@ -99,6 +101,7 @@ export class FiberTracker {
   snapshot(root: FiberRoot, index: number, label: string, calls: RenderCall[]): CommitRecord {
     const objIds = new Set<number>();
     const deletedIds = new Set<number>();
+    const domByObjId = new Map<number, Element>();
     const latest = new WeakSet<Fiber>();
 
     const visit = (fiber: Fiber): FiberSnap => {
@@ -110,6 +113,7 @@ export class FiberTracker {
       this.lastSeen.set(fiber, index);
       objIds.add(objId);
       latest.add(fiber);
+      if (isHostTag(fiber.tag) && fiber.stateNode instanceof Element) domByObjId.set(objId, fiber.stateNode);
 
       const props = fiber.memoizedProps;
       const prevProps = fiber.alternate?.memoizedProps ?? null;
@@ -152,7 +156,7 @@ export class FiberTracker {
 
     const tree = visit(root.current);
     this.latestObjects = latest;
-    return { index, label, tree, objIds, deletedIds, calls };
+    return { index, label, tree, objIds, deletedIds, calls, domByObjId };
   }
 }
 

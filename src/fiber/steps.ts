@@ -14,6 +14,53 @@ export interface Step {
   lines: string[];
 }
 
+export interface Progress {
+  begun: Set<number>;
+  completed: Set<number>;
+  committed: boolean;
+}
+
+// What the WIP tree looks like after step `index`: which fibers beginWork has
+// reached, which completeWork has finished, and whether the commit happened.
+export function progressAt(steps: Step[], index: number): Progress {
+  const begun = new Set<number>();
+  const completed = new Set<number>();
+  let committed = false;
+  for (const step of steps.slice(0, index + 1)) {
+    if (step.phase === 'commit') committed = true;
+    else if (step.objId !== null) (step.phase === 'begin' ? begun : completed).add(step.objId);
+  }
+  return { begun, completed, committed };
+}
+
+// DOM writes the commit performs and are worth flashing on the stage.
+export function commitEffects(tree: FiberSnap): { objId: number; kind: 'placement' | 'update' }[] {
+  const out: { objId: number; kind: 'placement' | 'update' }[] = [];
+  const walk = (n: FiberSnap) => {
+    if (n.status === 'kept') return;
+    if (isHostTag(n.tag)) {
+      if (n.flags.includes('Placement')) out.push({ objId: n.objId, kind: 'placement' });
+      else if (n.flags.includes('Update') && domWrites(n).length > 0) out.push({ objId: n.objId, kind: 'update' });
+    } else if (n.flags.includes('Placement')) {
+      // A component placed with its subtree: the inserted DOM is its first host descendant.
+      const host = firstHost(n);
+      if (host) out.push({ objId: host.objId, kind: 'placement' });
+    }
+    n.children.forEach(walk);
+  };
+  walk(tree);
+  return out;
+}
+
+function firstHost(n: FiberSnap): FiberSnap | null {
+  if (isHostTag(n.tag)) return n;
+  for (const child of n.children) {
+    const host = firstHost(child);
+    if (host) return host;
+  }
+  return null;
+}
+
 const label = (n: FiberSnap) => `${n.name} #${n.objId}${n.letter}`;
 
 export function buildSteps(commit: CommitRecord): Step[] {
@@ -106,9 +153,15 @@ function completeLines(n: FiberSnap): string[] {
   return lines;
 }
 
+// Changed props that updateProperties actually writes to the DOM at commit:
+// not event handlers, and `children` only when it is a text child.
+function domWrites(n: FiberSnap) {
+  return n.changedProps.filter((c) => !c.key.startsWith('on') && (c.key !== 'children' || n.textContent !== null));
+}
+
 function commitPrediction(n: FiberSnap): string {
   const handlers = n.changedProps.filter((c) => c.key.startsWith('on')).map((c) => c.key);
-  const domChanges = n.changedProps.filter((c) => !c.key.startsWith('on') && (c.key !== 'children' || n.textContent !== null));
+  const domChanges = domWrites(n);
   const parts: string[] = [];
   if (domChanges.length) {
     parts.push(`write ${domChanges.map((c) => (c.key === 'children' ? `textContent ${c.from} → ${c.to}` : `${c.key} ${c.from} → ${c.to}`)).join(', ')}`);
