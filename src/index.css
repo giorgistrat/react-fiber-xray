@@ -230,3 +230,40 @@ footer { padding: 4px 2px 20px; }
 @media (prefers-reduced-motion: reduce) {
   .stage [data-xray] { animation: none; }
 }
+
+/* Glossary terms + tooltip */
+[data-term] { cursor: help; }
+.chip[data-term], .tag[data-term], .alt[data-term], .fiber-body [data-term], .panel-head h2[data-term] {
+  text-decoration: underline dotted color-mix(in srgb, currentColor 45%, transparent);
+  text-underline-offset: 3px;
+}
+[data-term]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tooltip {
+  position: fixed;
+  z-index: 1000;
+  max-width: 320px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.25);
+  font-size: 12px;
+  line-height: 1.45;
+  pointer-events: none;
+}
+.tooltip-title { font-weight: 700; margin-bottom: 3px; font-family: ui-monospace, Menlo, monospace; }
+.tooltip-footer { margin-top: 5px; color: var(--muted); font-size: 11px; }
+
+/* React internals call tree in the step player */
+.step-fn { color: var(--accent); }
+.phase-complete .step-fn { opacity: 0.8; }
+.internals { margin: 6px 0 4px; padding: 6px 8px; border-radius: 6px; background: var(--code-bg); }
+.internals-head { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 4px; }
+.call-tree { list-style: none; margin: 0; padding: 0; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+.call-tree li { padding: 1px 0; overflow-wrap: anywhere; }
+.call-tree a { color: var(--accent); text-decoration: none; }
+.call-tree a:hover { text-decoration: underline; }
+.call-tree .call-user span:first-child { color: var(--called); font-weight: 700; }
+.call-tree .call-marker span:first-child { color: var(--new); font-style: italic; }
+.call-note { color: var(--muted); }

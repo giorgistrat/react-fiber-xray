@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { AlternateLinks, buildLinks } from './components/AlternateLinks';
+import { TooltipLayer } from './components/TooltipLayer';
 import { ElementColumn } from './components/ElementTree';
 import { FiberCard, type Highlight } from './components/FiberCard';
 import { Inspector } from './components/Inspector';
@@ -152,10 +153,10 @@ export default function App() {
               <input type="checkbox" checked={showPointers} onChange={(e) => setShowPointers(e.target.checked)} /> Pointers
             </label>
             <span className="legend">
-              <span className="chip letter-chip A">A</span>/<span className="chip letter-chip B">B</span> twin objects ·
-              <span className="chip st-new">new object</span>
-              <span className="chip st-recycled">recycled</span>
-              <span className="chip st-kept">not cloned</span> · hover a fiber to find its twin
+              <span className="chip letter-chip A" data-term="label:letter">A</span>/<span className="chip letter-chip B" data-term="label:letter">B</span> twin objects ·
+              <span className="chip st-new" data-term="status:new" tabIndex={0}>new object</span>
+              <span className="chip st-recycled" data-term="status:recycled" tabIndex={0}>recycled</span>
+              <span className="chip st-kept" data-term="status:kept" tabIndex={0}>not cloned</span> · hover a fiber to find its twin
             </span>
           </div>
 
@@ -171,21 +172,21 @@ export default function App() {
               )}
               <section className="panel col">
                 <div className="panel-head">
-                  <h2>① Current tree before render</h2>
+                  <h2 data-term="col:prev">① Current tree before render</h2>
                   <span className="muted small">read, never modified</span>
                 </div>
                 {prev ? <FiberCard node={prev.tree} hl={hlPrev} showWork={false} col="prev" /> : <p className="muted">Nothing before createRoot.</p>}
               </section>
               <section className="panel col">
                 <div className="panel-head">
-                  <h2>② New elements</h2>
+                  <h2 data-term="col:elements">② New elements</h2>
                   <span className="muted small">read one level at a time</span>
                 </div>
                 <ElementColumn calls={commit.calls} isInitial={index === 0} />
               </section>
               <section className="panel col">
                 <div className="panel-head">
-                  <h2>③ Work-in-progress → committed</h2>
+                  <h2 data-term="col:next">③ Work-in-progress → committed</h2>
                   <span className="muted small">written by the render</span>
                 </div>
                 {progress && (
@@ -212,6 +213,7 @@ export default function App() {
           </footer>
         </main>
       </div>
+      <TooltipLayer />
     </div>
   );
 }
