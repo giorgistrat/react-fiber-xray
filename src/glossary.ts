@@ -82,7 +82,48 @@ const entries: Record<string, GlossaryEntry> = {
 
   // Columns
   'col:prev': { title: '① Current tree', body: 'The fibers on screen before this render (the last commit). React reads old props, state and children from it and never modifies it during render.' },
-  'col:elements': { title: '② New elements', body: 'Plain objects returned by the components called in this render. React reads them one level at a time.' },
+  'col:elements': {
+    title: '② New elements',
+    body: 'Plain objects returned by the components called in this render. React reads them one level at a time: a parent fiber\u2019s beginWork reads its child elements and compares each with the current child fiber.',
+  },
+
+  // Element fates (column ②)
+  'el:mount': {
+    title: 'mount',
+    body: 'The parent fiber is new, so mountChildFibers creates a fiber for this element without tracking side effects. The whole new subtree is inserted with the parent.',
+  },
+  'el:create': {
+    title: 'new fiber',
+    body: 'No current child fiber had the same type and key, so createFiberFromElement allocated a new fiber. It is flagged Placement so commit inserts its DOM.',
+  },
+  'el:reuse': {
+    title: 'reuse',
+    body: 'Same type and key as the current child fiber (#left), so useFiber → createWorkInProgress produced the WIP fiber (#right) with this element\u2019s props as pendingProps.',
+  },
+  'el:bailout': {
+    title: 'same element object',
+    body: 'This exact element object was created in an earlier render (e.g. children passed from a parent that did not re-render). Its props are the same object, so the fiber bails out without calling the component.',
+  },
+  'el:text': {
+    title: 'text child',
+    body: 'A single string/number child of a DOM element is not an element and gets no fiber: shouldSetTextContent makes React set it as textContent.',
+  },
+  'el:deleted': {
+    title: 'deleted child',
+    body: 'A current child fiber that no new element matched (by key and type). deleteChild adds it to the parent\u2019s deletions; commit removes its DOM node.',
+  },
+  'el:owner': {
+    title: '_owner',
+    body: 'The fiber that was rendering when these elements were created: the work-in-progress fiber of the component that returned them (dev builds only).',
+  },
+  'el:raw': {
+    title: 'raw element object',
+    body: 'Show every own property of the real element object as captured during render. Muted fields are non-enumerable dev-only bookkeeping. Elements are frozen.',
+  },
+  'el:stats': {
+    title: 'element objects',
+    body: 'Each render allocates new element objects. React does not keep an element tree: once reconciled, an element is only reachable as some fiber\u2019s pendingProps/memoizedProps.',
+  },
   'col:next': { title: '③ Work-in-progress', body: 'The fibers React writes during this render: current fiber + new element → WIP fiber. At commit it becomes root.current.' },
 };
 

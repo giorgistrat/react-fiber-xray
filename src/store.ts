@@ -6,7 +6,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { onCommit } from './devtoolsHook';
 import { FiberTracker, type CommitRecord } from './fiber/snapshot';
 import type { Fiber, FiberRoot } from './fiber/types';
-import { drainTrace, resetTrace } from './trace';
+import { drainTrace, resetTrace, traceRoot } from './trace';
 
 export interface LogEntry {
   id: number;
@@ -60,7 +60,7 @@ function record(label: string) {
   const index = state.commits.length;
   const commit = state.tracker.snapshot(fiberRoot, index, label, calls);
   const entries: LogEntry[] = [
-    ...calls.map((call): LogEntry => ({
+    ...calls.filter((call) => call.kind === 'component').map((call): LogEntry => ({
       id: logId++,
       kind: 'call',
       text: `${call.component}() called${Object.keys(call.state).length ? ` ${JSON.stringify(call.state)}` : ''}`,
@@ -90,7 +90,9 @@ export function startScenario(target: HTMLElement, Component: ComponentType) {
 
   // Commit 0: before any render there is already a current tree – the bare HostRoot.
   record('createRoot (no render yet)');
-  root.render(createElement(Component));
+  const element = createElement(Component);
+  traceRoot(element); // drained into the mount commit, like a component's returned elements
+  root.render(element);
 }
 
 export function stopScenario() {
