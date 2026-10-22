@@ -290,3 +290,48 @@ footer { padding: 4px 2px 20px; }
 .raw th { text-align: left; font-weight: 500; padding: 2px 8px; color: var(--text); font-family: ui-monospace, Menlo, monospace; vertical-align: top; }
 .raw td { padding: 2px 8px 2px 0; overflow-wrap: anywhere; }
 .raw-hidden th, .raw-hidden td code { color: var(--muted); }
+
+/* Page tabs: Explorer | Interview questions */
+.views { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); }
+.views a { padding: 5px 12px; border-radius: 6px; color: var(--text); text-decoration: none; font-weight: 600; }
+.views a.on { background: var(--accent); color: #fff; }
+.views a:not(.on):hover { background: var(--code-bg); }
+.scenario-tabs { margin-bottom: 12px; }
+
+/* Interview page */
+.interview { display: flex; flex-direction: column; gap: 12px; max-width: 980px; margin: 0 auto; }
+.interview-intro p { margin: 8px 0; }
+.progress-bar { display: flex; height: 6px; border-radius: 3px; background: var(--code-bg); overflow: hidden; }
+.pb-got { background: var(--new); }
+.pb-review { background: var(--b); }
+.interview-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.seg { display: flex; flex-wrap: wrap; gap: 4px; }
+.seg button { font-size: 12px; padding: 3px 9px; }
+.seg button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.qa { background: var(--panel); border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.qa-got { border-left-color: var(--new); }
+.qa-review { border-left-color: var(--b); }
+.qa-head { display: flex; gap: 10px; align-items: baseline; }
+.qa-head h3 { margin: 0; font-size: 15px; flex: 1; line-height: 1.4; }
+.qa-num { font-family: ui-monospace, Menlo, monospace; color: var(--muted); min-width: 1.6em; }
+.qa-level { flex-shrink: 0; }
+.qa-hidden { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 10px; padding-left: calc(1.6em + 10px); }
+.qa-hidden p { margin: 0; }
+.qa-body { margin-top: 8px; padding-left: calc(1.6em + 10px); }
+.qa-answer { margin: 0 0 8px; font-size: 14px; line-height: 1.55; }
+.qa-mistake { margin: 0 0 8px; font-size: 13px; padding: 6px 8px; border-radius: 6px; background: var(--flag-soft); }
+.qa-deeper-body { font-size: 13px; margin-top: 6px; padding: 6px 10px; border-radius: 6px; background: var(--code-bg); }
+.qa-deeper-body p { margin: 4px 0; }
+.qa-fns a { color: var(--accent); font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+.qa-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.qa-mark { display: flex; gap: 6px; margin-left: auto; }
+.qa-mark button { font-size: 12px; }
+.qa-mark .on-got { background: var(--new-soft); border-color: var(--new); color: var(--new); }
+.qa-mark .on-review { background: var(--b-soft); border-color: var(--b); color: var(--b); }
+@media (max-width: 600px) {
+  .qa-hidden, .qa-body { padding-left: 0; }
+  .qa-mark { margin-left: 0; }
+}
+.qa code { background: var(--code-bg); padding: 0 4px; border-radius: 4px; font-size: 0.92em; }
+.qa-deeper-body code { background: var(--panel); }

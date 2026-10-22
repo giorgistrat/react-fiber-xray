@@ -19,9 +19,10 @@ export interface DemoState {
   commits: CommitRecord[];
   log: LogEntry[];
   tracker: FiberTracker;
+  run: number; // increments per startScenario, so callers can wait for a fresh mount
 }
 
-let state: DemoState = { commits: [], log: [], tracker: new FiberTracker() };
+let state: DemoState = { commits: [], log: [], tracker: new FiberTracker(), run: 0 };
 const subscribers = new Set<() => void>();
 let logId = 1;
 
@@ -81,7 +82,7 @@ export function startScenario(target: HTMLElement, Component: ComponentType) {
   stopScenario();
   container = target;
   resetTrace();
-  state = { commits: [], log: [], tracker: new FiberTracker() };
+  state = { commits: [], log: [], tracker: new FiberTracker(), run: state.run + 1 };
 
   root = createRoot(target);
   const containerKey = findKey(target, '__reactContainer$');
